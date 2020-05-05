@@ -4,3 +4,9 @@ C:\Users\Light\source\repos\GuppyDbConsole\GuppyDbConsole\bin\Debug\GuppyDbConso
 C:\Users\Light\source\repos\GuppyDbConsole\GuppyDbConsole\obj\Debug\GuppyDbConsole.csprojAssemblyReference.cache
 C:\Users\Light\source\repos\GuppyDbConsole\GuppyDbConsole\obj\Debug\GuppyDbConsole.exe
 C:\Users\Light\source\repos\GuppyDbConsole\GuppyDbConsole\obj\Debug\GuppyDbConsole.pdb
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\bin\Debug\GuppyDbConsole.exe.config
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\bin\Debug\GuppyDbConsole.exe
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\bin\Debug\GuppyDbConsole.pdb
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\obj\Debug\GuppyDbConsole.csprojAssemblyReference.cache
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\obj\Debug\GuppyDbConsole.exe
+C:\Users\Light\source\repos\GuppyDb\GuppyDbConsole\obj\Debug\GuppyDbConsole.pdb

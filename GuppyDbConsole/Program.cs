@@ -267,7 +267,7 @@ to see all the commands type 'help'
                                 if (!File.Exists(DatabaseFolder + insert_table + "\\" + file + ".gpx"))
                                     insert = false;
                             }
-                            if (new DirectoryInfo(DatabaseFolder + insert_table).GetFiles().Count() != fields.Count())
+                            if (new DirectoryInfo(DatabaseFolder + insert_table).GetFiles().Count()-1 != fields.Count())
                                 insert = false;
 
                             if (insert)
@@ -322,7 +322,7 @@ to see all the commands type 'help'
                                 List<int> line_to_delete = new List<int>();
                                 for (int i = 0; i < quotelist.Count(); i++)
                                 {
-                                    if (Compare(delete_values[1], delete_values[2], quotelist[i]))
+                                    if (Compare(delete_values[1], quotelist[i], delete_values[2])) // operator, left, right (>, 7, 8)
                                     {
                                         line_to_delete.Add(i);
                                     }
@@ -354,35 +354,44 @@ to see all the commands type 'help'
 
                     #region select 
                     case string s when s.StartsWith("select"):
-                        rx = new Regex("^select.*?from");
-                        string[] select_values = rx.Match(s).Value.Replace("select", String.Empty).Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
-                        rx = new Regex("[from]((?!where).)*$"); // ex : select * from users, etc (récupère )
-                        string[] select_tables = rx.Match(s).Value.Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
-                        string select_result = "";
-                        if (select_values[0].Contains("*"))
+                        try
                         {
-                            foreach (string select_table in select_tables)
+                            rx = new Regex("^select.*?from");
+                            string[] select_values = rx.Match(s).Value.Replace("select", String.Empty).Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
+                            rx = new Regex("[from]((?!where).)*$"); // ex : select * from users, etc (récupère )
+                            string[] select_tables = rx.Match(s).Value.Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
+                            string select_result = "";
+                            if (select_values[0].Contains("*"))
                             {
-                                FileInfo[] select_files = new DirectoryInfo(DatabaseFolder + "\\" + select_table).GetFiles().OrderBy(o => o.CreationTime).ToArray();
-                                int table_size = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_files[0]).Length;
-
-                                if (table_size != 0)
+                                foreach (string select_table in select_tables)
                                 {
-                                    for (int i = 0; i < table_size; i++)
+                                    FileInfo[] select_files = new DirectoryInfo(DatabaseFolder + "\\" + select_table).GetFiles().OrderBy(o => o.CreationTime).ToArray();
+                                    int table_size = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_files[0]).Length;
+
+                                    if (table_size != 0)
                                     {
-                                        select_result += "{ ";
-                                        foreach (FileInfo select_file in select_files)
+                                        for (int i = 0; i < table_size; i++)
                                         {
-                                            List<string> datas = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_file.Name).ToList();
-                                            select_result += select_file.Name.Replace(".gpx", String.Empty) + " : " + datas[i] + ", ";
+                                            select_result += "{ ";
+                                            foreach (FileInfo select_file in select_files)
+                                            {
+                                                List<string> datas = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_file.Name).ToList();
+                                                select_result += select_file.Name.Replace(".gpx", String.Empty) + " : " + datas[i] + ", ";
+                                            }
+                                            select_result = select_result.Remove(select_result.Length - 2) + " }" + Environment.NewLine;
                                         }
-                                        select_result = select_result.Remove(select_result.Length - 2) + " }" + Environment.NewLine;
                                     }
+                                    else
+                                        Console.WriteLine($"{select_table} is empty");
                                 }
-                                else
-                                    Console.WriteLine($"{select_table} is empty");
+                                Console.WriteLine(select_result);
                             }
-                            Console.WriteLine(select_result);
+                        }
+                        catch (Exception)
+                        {
+                            OutMessage.Error(@"
+-> You aren't inside database
+-> The selected table doesn't exist");
                         }
                         break;
                     #endregion

@@ -1,0 +1,10 @@
+
+# ignore the solution (.sln)
+*.sln
+
+# ignore the Visual Studio temp something (.vs folder)
+.vs/
+
+# ignore the logfiles & txtfiles
+*.log
+*.txt

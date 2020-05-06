@@ -12,12 +12,13 @@ namespace GuppyDbConsole
 
     class Program
     {
+        private static string rootFolder = Directory.GetCurrentDirectory() + "\\db";
+        public static string DatabaseFolder = rootFolder;
+        public static string TableFolder = "";
+
         static void Main(string[] args)
         {
             Console.Title = "GuppyDb - Console";
-            string rootFolder = Directory.GetCurrentDirectory() + "\\db";
-            string DatabaseFolder = rootFolder;
-            string TableFolder = "";
 
             if (!Directory.Exists(DatabaseFolder))
                 Directory.CreateDirectory(DatabaseFolder);
@@ -253,152 +254,25 @@ to see all the commands type 'help'
 
                     #region insert into
                     case string it when it.Contains("insert into"):
-                        Regex rx;
-                        rx = new Regex("(?<=insert into\\s).*?[(]");
-                        string insert_table = "\\" + rx.Match(it).Value.Replace("(", String.Empty);
-                        if (Directory.Exists(DatabaseFolder + insert_table))
-                        {
-                            rx = new Regex("[(].*?[)]");
-                            string[] fields = rx.Matches(it)[0].ToString().Replace(" ", String.Empty).Replace("(", String.Empty).Replace(")", String.Empty).Split(',');
-                            string[] values = rx.Matches(it)[1].ToString().Replace(" ", String.Empty).Replace("(", String.Empty).Replace(")", String.Empty).Split(',');
-                            bool insert = true;
-                            foreach (string file in fields)
-                            {
-                                if (!File.Exists(DatabaseFolder + insert_table + "\\" + file + ".gpx"))
-                                    insert = false;
-                            }
-                            if (new DirectoryInfo(DatabaseFolder + insert_table).GetFiles().Count()-1 != fields.Count())
-                                insert = false;
-
-                            if (insert)
-                            {
-                                int new_id;
-                                if (File.ReadLines(DatabaseFolder + insert_table + "\\id.gpx").Count() != 0)
-                                    new_id = int.Parse(File.ReadLines(DatabaseFolder + insert_table + "\\id.gpx").Last()) + 1;
-                                else
-                                    new_id = 0;
-
-                                using (StreamWriter sw = File.AppendText(DatabaseFolder + insert_table + "\\id.gpx"))
-                                {
-                                    sw.WriteLine(new_id);
-                                    sw.Close();
-                                }
-                                for (int i = 0; i < fields.Length; i++)
-                                {
-                                    using (StreamWriter sw = File.AppendText(DatabaseFolder + insert_table + "\\" + fields[i] + ".gpx"))
-                                    {
-                                        sw.WriteLine(values[i]);
-                                        sw.Close();
-                                    }
-                                }
-                                OutMessage.Success("Data inserted successfully");
-                            }
-                            else
-                                OutMessage.Error("A field is missing or isn't matching with table's one");
-                        }
-                        else
-                            OutMessage.Error($@"{insert_table.Remove(0, 1)} doesn't exist or you aren't inside a database
--> type 'use <dbName>' to go inside a database
--> type 'show tables' to see all the tables inside the database");
+                        DataCommands.Insert(it);
                         break;
                     #endregion
 
                     #region delete 
                     case string d when d.Contains("delete"):
-                        rx = new Regex("(?<=from\\s).*?\\s");
-                        string delete_table = "\\" + rx.Match(d).Value.Replace(" ", String.Empty);
-                        if (Directory.Exists(DatabaseFolder + delete_table))
-                        {
-                            rx = new Regex("(?<=where\\s).*");
-                            string[] delete_values = rx.Match(d).Value.Split(' ');
-                            bool delete = true;
-                            string path = DatabaseFolder + delete_table + "\\" + delete_values[0] + ".gpx";
-                            if (!File.Exists(path))
-                                delete = false;
-
-                            if (delete)
-                            {
-                                List<string> quotelist = File.ReadAllLines(DatabaseFolder + delete_table + "\\" + delete_values[0] + ".gpx").ToList();
-                                List<int> line_to_delete = new List<int>();
-                                for (int i = 0; i < quotelist.Count(); i++)
-                                {
-                                    if (Compare(delete_values[1], quotelist[i], delete_values[2])) // operator, left, right (>, 7, 8)
-                                    {
-                                        line_to_delete.Add(i);
-                                    }
-                                }
-                                File.WriteAllLines(DatabaseFolder + delete_table + "\\" + delete_values[0] + ".gpx", quotelist.ToArray());
-
-                                foreach (FileInfo file in new DirectoryInfo(DatabaseFolder + delete_table).GetFiles())
-                                {
-                                    quotelist = File.ReadAllLines(file.FullName).ToList();
-                                    foreach (int delete_index in line_to_delete.OrderByDescending(key => key))
-                                    {
-                                        quotelist.RemoveAt(delete_index);
-                                    }
-                                    File.WriteAllLines(DatabaseFolder + delete_table + "\\" + file, quotelist.ToArray());
-
-                                }
-                                OutMessage.Success("Data(s) deleted successfully");
-                            }
-                            else
-                                OutMessage.Warning("The delete condition is false");
-                        }
-                        else
-                            OutMessage.Warning($@"{delete_table.Remove(0, 1)} doesn't exist or you aren't inside a database
--> type 'use <dbName>' to go inside a database
--> type 'show tables' to see all the tables inside the database");
-
+                        DataCommands.Delete(d);
                         break;
                     #endregion
 
                     #region select 
                     case string s when s.StartsWith("select"):
-                        try
-                        {
-                            rx = new Regex("^select.*?from");
-                            string[] select_values = rx.Match(s).Value.Replace("select", String.Empty).Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
-                            rx = new Regex("[from]((?!where).)*$"); // ex : select * from users, etc (récupère )
-                            string[] select_tables = rx.Match(s).Value.Replace("from", String.Empty).Replace(" ", String.Empty).Split(',');
-                            string select_result = "";
-                            if (select_values[0].Contains("*"))
-                            {
-                                foreach (string select_table in select_tables)
-                                {
-                                    FileInfo[] select_files = new DirectoryInfo(DatabaseFolder + "\\" + select_table).GetFiles().OrderBy(o => o.CreationTime).ToArray();
-                                    int table_size = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_files[0]).Length;
-
-                                    if (table_size != 0)
-                                    {
-                                        for (int i = 0; i < table_size; i++)
-                                        {
-                                            select_result += "{ ";
-                                            foreach (FileInfo select_file in select_files)
-                                            {
-                                                List<string> datas = File.ReadAllLines(DatabaseFolder + "\\" + select_table + "\\" + select_file.Name).ToList();
-                                                select_result += select_file.Name.Replace(".gpx", String.Empty) + " : " + datas[i] + ", ";
-                                            }
-                                            select_result = select_result.Remove(select_result.Length - 2) + " }" + Environment.NewLine;
-                                        }
-                                    }
-                                    else
-                                        Console.WriteLine($"{select_table} is empty");
-                                }
-                                Console.WriteLine(select_result);
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            OutMessage.Error(@"
--> You aren't inside database
--> The selected table doesn't exist");
-                        }
+                        DataCommands.Select(s);
                         break;
                     #endregion
 
                     #region default
                     default:
-                        OutMessage.Error("La commande demandé n'existe pas");
+                        OutMessage.Error("The requested command doesn't exist");
                         break;
                         #endregion
                 }
@@ -408,20 +282,6 @@ to see all the commands type 'help'
                 #endregion
             }
 
-        }
-
-        public static bool Compare<T>(string op, T left, T right) where T : IComparable<T>
-        {
-            switch (op)
-            {
-                case "<": return left.CompareTo(right) < 0;
-                case ">": return left.CompareTo(right) > 0;
-                case "<=": return left.CompareTo(right) <= 0;
-                case ">=": return left.CompareTo(right) >= 0;
-                case "=": return left.Equals(right);
-                case "<>": return !left.Equals(right);
-                default: throw new ArgumentException("Invalid comparison operator: {0}", op);
-            }
         }
     }
 }

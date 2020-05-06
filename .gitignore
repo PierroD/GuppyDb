@@ -8,3 +8,6 @@
 # ignore the logfiles & txtfiles
 *.log
 *.txt
+
+# ignore guppy db
+db/
